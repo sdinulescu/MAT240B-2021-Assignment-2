@@ -21,11 +21,11 @@
 #include <complex>
 #include <iostream>
 #include <valarray>
-#include "everything.h"
 
 const double PI = 3.141592653589793238460;
 const int WINDOW_LENGTH = 2048;
 const int PADDED_LENGTH = 8192;
+const int SAMPLE_FREQUENCY = 48000;
 
 typedef std::complex<double> Complex;
 typedef std::valarray<Complex> CArray;
@@ -79,10 +79,10 @@ void ifft(CArray& x) {
 }
 
 void print_data(CArray& d) { // output vals
-  std::cout << "size = " << d.size() << std::endl;
+  //std::cout << "size = " << d.size() << std::endl;
   for (int i = 0; i < d.size(); ++i) {
-    printf("%lf\n", d[i]);
-    //std::cout << d[i] << std::endl;
+    //printf("%lf\n", d[i]);
+    std::cout << d[i] << std::endl;
   }
 }
 
@@ -90,7 +90,8 @@ double hann(double x) { // Hanning window
   return (1 - cos(2 * PI * (x - 1) / 2)) / 2;
 }
 
-// bool compare (Complex i,Complex j) { return (i.real()<j.real()); } // from http://www.cplusplus.com/reference/algorithm/sort/
+bool compare (freq_amp i, freq_amp j) { return(i.first > j.first); } //sort descending by amplitude here... i think
+// from http://www.cplusplus.com/reference/algorithm/sort/
 
 int main(int argc, char *argv[]) {
   // take the data in
@@ -113,7 +114,7 @@ int main(int argc, char *argv[]) {
   std::cin >> N;
   std::cout << "N is " << N << std::endl;
 
-  CArray peaks(N * int(input.size()/WINDOW_LENGTH)); 
+  CArray peaks(N); 
   int peak_index = 0; // this will go from 0 to 16. at each peaks[peak_index] will be a CArray of N sorted freq/amp vals
 
   /* for each sound clip of 2048 samples print information on the the N peaks.
@@ -131,6 +132,8 @@ int main(int argc, char *argv[]) {
   int input_index = 0; 
   int window_index = 0;
   double window[WINDOW_LENGTH]; //2048
+
+  double v = 480000/PADDED_LENGTH;
   while ( input_index < input.size() ) {
     //std::cout << "window_index = " << window_index << std::endl;
     if (window_index >= WINDOW_LENGTH) { 
@@ -151,27 +154,29 @@ int main(int argc, char *argv[]) {
       fft(window_padded);
       //std::cout << "fft" << std::endl;
 
-      //let's get the peaks
+      // //let's get the peaks
       freq_amp pairs[PADDED_LENGTH];
-      //this is hacky but working with valarray<Complex> crashes with sort
       for (auto& elem : window_padded) { // https://stackoverflow.com/questions/26541920/is-it-a-good-practice-to-use-const-auto-in-a-range-for-to-process-the-element/26543405
         //std::cout << elem << " ";
          // if the current index is needed:
         auto i = &elem - &window_padded[0];
-        pairs[i] = std::make_pair(elem.real(), elem.imag());
+        // store points as (frequency, amplitude) 
+        // references: readings and additional sources
+        // fft frequency -> 0th bin = 0Hz, 1st bin = 1 * Fs/N, 2nd bin = 2 * Fs/N, 3rd bin = 3 * Fs/N, etc.
+        // reference: https://stackoverflow.com/questions/4364823/how-do-i-obtain-the-frequencies-of-each-value-in-an-fft
+        // fft amplitude = abs(fft / size) // https://www.researchgate.net/post/How_can_I_find_the_amplitude_of_a_real_signal_using_fft_function_in_Matlab#:~:text=1)%20Division%20by%20N%3A%20amplitude,).%2FN%2F2)%3B
+        pairs[i] = std::make_pair(i * SAMPLE_FREQUENCY/PADDED_LENGTH, std::abs(elem.real()/PADDED_LENGTH));
       }
 
-      std::sort(std::begin(pairs), std::end(pairs), std::greater<>()); // works now (yay)      
+      std::sort(std::begin(pairs), std::end(pairs), compare); // works now (yay) 
 
-      // get the first N of these
-      for (std::size_t i = 0; i < N; i++) {
-        peaks[peak_index] = Complex(pairs[i].first, pairs[i].second);
-        if (peak_index >= N) { peak_index += i + 1; } else { peak_index += i; } 
-      }
+      for (int i = 0 ; i < N; i++) { //print the first 16 bins for each window
+        std::cout << pairs[i].first << "/" << pairs[i].second << ","; // print frequency, then amplitude
+      }   
     }
+    //increment the window
     window[window_index] = input[input_index];
     input_index++; window_index++;
   }
-  print_data(peaks);
   return 0;
 }
