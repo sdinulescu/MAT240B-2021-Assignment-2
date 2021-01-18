@@ -163,7 +163,7 @@ int main(int argc, char *argv[]) {
         // fft frequency -> 0th bin = 0Hz, 1st bin = 1 * Fs/N, 2nd bin = 2 * Fs/N, 3rd bin = 3 * Fs/N, etc. where N is FFT size
         // reference: https://stackoverflow.com/questions/4364823/how-do-i-obtain-the-frequencies-of-each-value-in-an-fft
         // fft amplitude = abs(fft / size) // https://www.researchgate.net/post/How_can_I_find_the_amplitude_of_a_real_signal_using_fft_function_in_Matlab#:~:text=1)%20Division%20by%20N%3A%20amplitude,).%2FN%2F2)%3B
-        pairs[i] = Complex(i * SAMPLE_FREQUENCY/PADDED_LENGTH, std::abs(window_padded[i].real()/PADDED_LENGTH));
+        pairs[i] = Complex(i * SAMPLE_FREQUENCY/PADDED_LENGTH, std::abs(window_padded[i]/Complex(PADDED_LENGTH)));
         //(std::make_pair(i * SAMPLE_FREQUENCY/PADDED_LENGTH, std::abs(window_padded[i].real()/PADDED_LENGTH)));
         //std::cout << pairs[i].first << " " << pairs[i].second << std::endl;
       }
