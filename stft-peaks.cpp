@@ -90,7 +90,7 @@ double hann(double x) { // Hanning window
   return (1 - cos(2 * PI * (x - 1) / 2)) / 2;
 }
 
-bool compare (freq_amp i, freq_amp j) { return(i.first > j.first); } //sort descending by amplitude here... i think
+bool compare (freq_amp i, freq_amp j) { return(i.second > j.second); } //sort descending by amplitude here... i think
 // from http://www.cplusplus.com/reference/algorithm/sort/
 
 int main(int argc, char *argv[]) {
@@ -133,10 +133,11 @@ int main(int argc, char *argv[]) {
   int window_index = 0;
   double window[WINDOW_LENGTH]; //2048
 
-  double v = 480000/PADDED_LENGTH;
   while ( input_index < input.size() ) {
     //std::cout << "window_index = " << window_index << std::endl;
-    if (window_index >= WINDOW_LENGTH) { 
+    //increment the window
+    window[window_index] = input[input_index];
+    if (window_index >= WINDOW_LENGTH) { // take windows of 2048 samples
       window_index = 0; 
       input_index -= 0.5 * WINDOW_LENGTH; // 50% overlap
 
@@ -146,7 +147,7 @@ int main(int argc, char *argv[]) {
       //zero pad the data
       CArray window_padded(PADDED_LENGTH); //8192
       for (std::size_t i = 0; i < PADDED_LENGTH; i++) {
-        if (i < WINDOW_LENGTH) { window_padded[i] = window[i]; } else { window_padded[i] = 0; }
+        if (i < WINDOW_LENGTH) { window_padded[i] = window[i]; } else { window_padded[i] = 0.0; }
         //std::cout << window_padded[i] << std::endl;
       }
       
@@ -158,25 +159,27 @@ int main(int argc, char *argv[]) {
       freq_amp pairs[PADDED_LENGTH];
       for (auto& elem : window_padded) { // https://stackoverflow.com/questions/26541920/is-it-a-good-practice-to-use-const-auto-in-a-range-for-to-process-the-element/26543405
         //std::cout << elem << " ";
-         // if the current index is needed:
+        // if the current index is needed:
         auto i = &elem - &window_padded[0];
         // store points as (frequency, amplitude) 
         // references: readings and additional sources
         // fft frequency -> 0th bin = 0Hz, 1st bin = 1 * Fs/N, 2nd bin = 2 * Fs/N, 3rd bin = 3 * Fs/N, etc.
         // reference: https://stackoverflow.com/questions/4364823/how-do-i-obtain-the-frequencies-of-each-value-in-an-fft
         // fft amplitude = abs(fft / size) // https://www.researchgate.net/post/How_can_I_find_the_amplitude_of_a_real_signal_using_fft_function_in_Matlab#:~:text=1)%20Division%20by%20N%3A%20amplitude,).%2FN%2F2)%3B
-        pairs[i] = std::make_pair(i * SAMPLE_FREQUENCY/PADDED_LENGTH, std::abs(elem.real()/PADDED_LENGTH));
+        pairs[i] = std::make_pair(double(i * SAMPLE_FREQUENCY/PADDED_LENGTH), std::abs(elem.real()/PADDED_LENGTH));
+        //std::cout << pairs[i].first << " " << pairs[i].second << std::endl;
       }
+      
+      std::sort(std::begin(pairs), std::begin(pairs) + 1, compare); // works now (yay) 
 
-      std::sort(std::begin(pairs), std::end(pairs), compare); // works now (yay) 
-
-      for (int i = 0 ; i < N; i++) { //print the first 16 bins for each window
+      for (std::size_t i = 0 ; i < N; i++) { //print the first 16 frequency bins for each window
         std::cout << pairs[i].first << "/" << pairs[i].second << ","; // print frequency, then amplitude
       }   
+    } else {
+      input_index++; 
+      window_index++;
     }
-    //increment the window
-    window[window_index] = input[input_index];
-    input_index++; window_index++;
   }
+  std::cout << std::endl;
   return 0;
 }
