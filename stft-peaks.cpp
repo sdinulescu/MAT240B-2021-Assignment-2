@@ -1,5 +1,5 @@
 // Assignment 2
-//
+// Written by Stejara Dinulescu 
 // XXX Analysis!
 // - find the most prominent N peaks in a sequence of sound clips
 // - break the input into a sequence of overlaping sound clips
@@ -15,13 +15,13 @@
 // sine-sweep.wav, impulse-sweep.wav, sawtooth-sweep.wav)
 //
 // -- Karl Yerkes / 2021-01-12 / MAT240B
-//
 
 #include <algorithm>  // std::sort
 #include <vector>
 #include <complex>
 #include <iostream>
 #include <valarray>
+#include "everything.h"
 
 const double PI = 3.141592653589793238460;
 const int WINDOW_LENGTH = 2048;
@@ -29,8 +29,9 @@ const int PADDED_LENGTH = 8192;
 
 typedef std::complex<double> Complex;
 typedef std::valarray<Complex> CArray;
-typedef std::pair<double,double> freq_amp;
+typedef std::pair<double,double> freq_amp; // https://www.geeksforgeeks.org/pair-in-cpp-stl/
 
+// Taken from 01-14.md by Karl Yerkes
 // Cooley–Tukey FFT (in-place, divide-and-conquer)
 // Higher memory requirements and redundancy although more intuitive
 void fft(CArray& x) {
@@ -80,8 +81,8 @@ void ifft(CArray& x) {
 void print_data(CArray& d) { // output vals
   std::cout << "size = " << d.size() << std::endl;
   for (int i = 0; i < d.size(); ++i) {
-    //printf("%lf\n", d[i]);
-    std::cout << d[i] << std::endl;
+    printf("%lf\n", d[i]);
+    //std::cout << d[i] << std::endl;
   }
 }
 
@@ -153,14 +154,13 @@ int main(int argc, char *argv[]) {
       //let's get the peaks
       freq_amp pairs[PADDED_LENGTH];
       //this is hacky but working with valarray<Complex> crashes with sort
-      for (auto& elem : window_padded) {
+      for (auto& elem : window_padded) { // https://stackoverflow.com/questions/26541920/is-it-a-good-practice-to-use-const-auto-in-a-range-for-to-process-the-element/26543405
         //std::cout << elem << " ";
          // if the current index is needed:
         auto i = &elem - &window_padded[0];
         pairs[i] = std::make_pair(elem.real(), elem.imag());
-        // any code including continue, break, return
       }
-      
+
       std::sort(std::begin(pairs), std::end(pairs), std::greater<>()); // works now (yay)      
 
       // get the first N of these
