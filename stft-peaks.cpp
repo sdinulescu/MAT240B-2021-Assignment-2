@@ -90,7 +90,8 @@ double hann(double x) { // Hanning window
   return (1 - cos(2 * PI * (x - 1) / 2)) / 2;
 }
 
-bool compare (freq_amp i, freq_amp j) { return(i.second > j.second); } //sort descending by amplitude here... i think
+bool compare(Complex& i, Complex& j) { return(i.imag() > j.imag()); } //changed it back because I ended up using vector as a container anyways, so might as well just use CArray because it is better
+//bool compare(freq_amp& i, freq_amp& j) { return(i.second > j.second); } //sort descending by amplitude here... i think
 // from http://www.cplusplus.com/reference/algorithm/sort/
 
 int main(int argc, char *argv[]) {
@@ -114,9 +115,6 @@ int main(int argc, char *argv[]) {
   std::cin >> N;
   std::cout << "N is " << N << std::endl;
 
-  CArray peaks(N); 
-  int peak_index = 0; // this will go from 0 to 16. at each peaks[peak_index] will be a CArray of N sorted freq/amp vals
-
   /* for each sound clip of 2048 samples print information on the the N peaks.
      print the N frequency/amplitude pairs on a single line. separate the
      elements of each pair using the slash "/" character and separate each pair
@@ -133,10 +131,13 @@ int main(int argc, char *argv[]) {
   int window_index = 0;
   double window[WINDOW_LENGTH]; //2048
 
+  CArray pairs(PADDED_LENGTH);
+  //std::vector<freq_amp> pairs;
   while ( input_index < input.size() ) {
     //std::cout << "window_index = " << window_index << std::endl;
     //increment the window
     window[window_index] = input[input_index];
+
     if (window_index >= WINDOW_LENGTH) { // take windows of 2048 samples
       window_index = 0; 
       input_index -= 0.5 * WINDOW_LENGTH; // 50% overlap
@@ -156,24 +157,21 @@ int main(int argc, char *argv[]) {
       //std::cout << "fft" << std::endl;
 
       // //let's get the peaks
-      freq_amp pairs[PADDED_LENGTH];
-      for (auto& elem : window_padded) { // https://stackoverflow.com/questions/26541920/is-it-a-good-practice-to-use-const-auto-in-a-range-for-to-process-the-element/26543405
-        //std::cout << elem << " ";
-        // if the current index is needed:
-        auto i = &elem - &window_padded[0];
+      for (std::size_t i = 0; i < PADDED_LENGTH; i++) {
         // store points as (frequency, amplitude) 
         // references: readings and additional sources
-        // fft frequency -> 0th bin = 0Hz, 1st bin = 1 * Fs/N, 2nd bin = 2 * Fs/N, 3rd bin = 3 * Fs/N, etc.
+        // fft frequency -> 0th bin = 0Hz, 1st bin = 1 * Fs/N, 2nd bin = 2 * Fs/N, 3rd bin = 3 * Fs/N, etc. where N is FFT size
         // reference: https://stackoverflow.com/questions/4364823/how-do-i-obtain-the-frequencies-of-each-value-in-an-fft
         // fft amplitude = abs(fft / size) // https://www.researchgate.net/post/How_can_I_find_the_amplitude_of_a_real_signal_using_fft_function_in_Matlab#:~:text=1)%20Division%20by%20N%3A%20amplitude,).%2FN%2F2)%3B
-        pairs[i] = std::make_pair(double(i * SAMPLE_FREQUENCY/PADDED_LENGTH), std::abs(elem.real()/PADDED_LENGTH));
+        pairs[i] = Complex(i * SAMPLE_FREQUENCY/PADDED_LENGTH, std::abs(window_padded[i].real()/PADDED_LENGTH));
+        //(std::make_pair(i * SAMPLE_FREQUENCY/PADDED_LENGTH, std::abs(window_padded[i].real()/PADDED_LENGTH)));
         //std::cout << pairs[i].first << " " << pairs[i].second << std::endl;
       }
       
-      std::sort(std::begin(pairs), std::begin(pairs) + 1, compare); // works now (yay) 
+      std::sort(std::begin(pairs), std::begin(pairs) + 1, compare);
 
       for (std::size_t i = 0 ; i < N; i++) { //print the first 16 frequency bins for each window
-        std::cout << pairs[i].first << "/" << pairs[i].second << ","; // print frequency, then amplitude
+        std::cout << pairs[i].real() << "/" << pairs[i].imag() << ","; // print frequency, then amplitude
       }   
     } else {
       input_index++; 
