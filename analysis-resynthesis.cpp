@@ -115,11 +115,6 @@ struct MyApp : App {
     //   + the name of a .wav file
     //   + the number of oscillators N
     // - adapt code from wav-read.cpp
-  }
-
-  void onInit() override {
-    // called a single time just after the app is started
-    //
 
     sine.resize(N);
 
@@ -127,6 +122,11 @@ struct MyApp : App {
     for (int n = 0; n < N; n++) {
       sine[n].frequency(220.0 * (1 + n));
     }
+  }
+
+  void onInit() override {
+    // called a single time just after the app is started
+    //
   }
 
   void onCreate() override {

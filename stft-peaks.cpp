@@ -109,11 +109,11 @@ int main(int argc, char *argv[]) {
 
   std::cout << "input size = " << input.size() << std::endl;
 
-  // take in N
+  // take in N from command line
   int N = 16;
-  std::cout << "please input a value for N (number of peaks): ";
-  std::cin >> N;
-  std::cout << "N is " << N << std::endl;
+  if (argc > 1) {
+    N = std::stoi(argv[1]);
+  }
 
   /* for each sound clip of 2048 samples print information on the the N peaks.
      print the N frequency/amplitude pairs on a single line. separate the
@@ -163,7 +163,7 @@ int main(int argc, char *argv[]) {
         // fft frequency -> 0th bin = 0Hz, 1st bin = 1 * Fs/N, 2nd bin = 2 * Fs/N, 3rd bin = 3 * Fs/N, etc. where N is FFT size
         // reference: https://stackoverflow.com/questions/4364823/how-do-i-obtain-the-frequencies-of-each-value-in-an-fft
         // fft amplitude = abs(fft / size) // https://www.researchgate.net/post/How_can_I_find_the_amplitude_of_a_real_signal_using_fft_function_in_Matlab#:~:text=1)%20Division%20by%20N%3A%20amplitude,).%2FN%2F2)%3B
-        pairs[i] = Complex(i * SAMPLE_FREQUENCY/PADDED_LENGTH, std::abs(window_padded[i]/Complex(PADDED_LENGTH)));
+        pairs[i] = Complex(i * SAMPLE_FREQUENCY/PADDED_LENGTH, std::abs(window_padded[i])/PADDED_LENGTH);
         //(std::make_pair(i * SAMPLE_FREQUENCY/PADDED_LENGTH, std::abs(window_padded[i].real()/PADDED_LENGTH)));
         //std::cout << pairs[i].first << " " << pairs[i].second << std::endl;
       }
